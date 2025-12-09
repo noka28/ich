@@ -1,4 +1,11 @@
-body {
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=windows-1252">
+    <link rel="alternate stylesheet" type="text/css" href="resource://gre-resources/plaintext.css"
+      title="Lange Zeilen umbrechen">
+  </head>
+  <body>
+    <pre>body {
   font-family: Arial, sans-serif;
   max-width: 800px;
   margin: 40px auto;
@@ -28,3 +35,6 @@ nav a:hover {
 h1 {
   color: #333;
 }
+</pre>
+  </body>
+</html>
