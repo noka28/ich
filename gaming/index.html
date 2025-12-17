@@ -21,9 +21,34 @@ a.stilvoller-link:hover {
     /* Sie können hier weitere Hover-Effekte hinzufügen, z.B. */
     /* background-color: #333; */ /* Ein etwas helleres Schwarz */
 }
+/* farbverlauf */
+body {
+     background: linear-gradient(300deg, #da0707, #a72d0a, #3d3d3d, #000000);
+      background-size: 800% 800%;
+      animation: gradientAnimation 10s ease infinite;
+      font-family: system-ui, sans-serif;
+      color: white;
+    }
+
+    @keyframes gradientAnimation {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    h1 {
+      color: white;
+      background: rgb(0, 0, 0);
+      padding: 1rem 2rem;
+      border-radius: 12px;
+      max-width: 800px;
+      line-height: 1.5;
+      word-wrap: break-word;
+    }
 </style>
 </head>
 <body>
+
 
 <nav>
   <a href="../index.html">Startseite</a>

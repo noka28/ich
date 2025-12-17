@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Animierter Farbverlauf</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    html, body {
+     background: linear-gradient(270deg, #da0707, #a72d0e, #3d3d3d, #000000);
+      background-size: 800% 800%;
+      animation: gradientAnimation 10s ease infinite;
+      font-family: system-ui, sans-serif;
+      color: white;
+    }
+
+    @keyframes gradientAnimation {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    h1 {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 1rem 2rem;
+      border-radius: 12px;
+      max-width: 800px;
+      line-height: 1.5;
+      word-wrap: break-word;
+    }
+  </style>
+</head>
+<body>
+  <main style="padding: 2rem;">
+    <h1>
+      Animierter Farbverlauf<br />
+      Zeilenumbruch funktioniert wieder ganz normal – auch bei längeren Texten.
+    </h1>
+    <p>
+      Das Problem entstand durch <code>display: flex</code> mit Zentrierung auf dem <code>body</code>.
+      Jetzt verhält sich die Seite wieder wie ein normales Dokument.
+    </p>
+  </main>
+</body>
+</html>
