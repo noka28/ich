@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Noah's Speed Snake 2026 - Single Player</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        body { 
+            display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; 
+            background: #1a1a2e; color: white; font-family: 'Segoe UI', sans-serif; flex-direction: column; 
+            overflow: hidden;
+        }
+        .controls {
+            background: #16213e; padding: 15px; border-radius: 10px; margin-bottom: 10px;
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .stats { display: flex; gap: 30px; font-size: 24px; margin-bottom: 10px; font-weight: bold; }
+        canvas { 
+            border: 5px solid #16213e; background-color: #000; 
+            box-shadow: 0 0 30px rgba(0, 255, 127, 0.2); border-radius: 8px;
+        }
+        input[type=range] { cursor: pointer; width: 200px; }
+        .info { margin-top: 10px; color: #95a5a6; }
+        #highScore { color: #f1c40f; }
+        #scoreVal { color: #00ff7f; }
+    </style>
+</head>
+<body>
+    <h1>SNAKE 2026</h1> 
+    <a href="index.html" class="stilvoller-link"> Zurück zu Gaming</a>
+
+    <div class="controls">
+        <label>Geschwindigkeit einstellen:</label>
+        <input type="range" id="speedRange" min="50" max="280" value="150">
+    </div>
+
+    <div class="stats">
+        <div>Score: <span id="scoreVal">0</span></div>
+        <div>Highscore: <span id="highScore">0</span></div>
+    </div>
+
+    <canvas id="gameCanvas" width="600" height="400"></canvas>
+    <p class="info">Pfeiltasten oder WASD zum Steuern</p>
+
+<script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const scoreVal = document.getElementById("scoreVal");
+    const highScoreVal = document.getElementById("highScore");
+    const box = 20;
+
+    let savedHighScore = localStorage.getItem("noahSnakeHS") || 0;
+    highScoreVal.innerText = savedHighScore;
+
+    let score = 0;
+    let snake = { body: [{x: 10*box, y: 10*box}], d: "", nextD: "", lastTime: 0 };
+    let food = createFood();
+    let gameOver = false;
+
+    function createFood() {
+        return {
+            x: Math.floor(Math.random() * (canvas.width / box)) * box,
+            y: Math.floor(Math.random() * (canvas.height / box)) * box,
+            type: Math.random() < 0.1 ? "gold" : "red"
+        };
+    }
+
+    // ---------- AUDIO ----------
+    let audioCtx = null;
+
+    // Hintergrundmusik
+    const bgMusic = new Audio("snake-music.mp3");
+    bgMusic.loop = true;
+    bgMusic.volume = 0.4;
+
+    // Minecraft-Essen
+    function playPlop() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        const now = audioCtx.currentTime;
+
+        for (let i = 0; i < 3; i++) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = "square";
+            osc.frequency.setValueAtTime(220 - i * 30, now + i * 0.05);
+
+            gain.gain.setValueAtTime(0.5, now + i * 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.05 + 0.08);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start(now + i * 0.05);
+            osc.stop(now + i * 0.05 + 0.08);
+        }
+    }
+
+    // Error / Game Over
+    function playError() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.type = "sawtooth";
+        osc.frequency.setValueAtTime(180, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(90, audioCtx.currentTime + 0.15);
+
+        gain.gain.setValueAtTime(0.6, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.15);
+    }
+
+    document.addEventListener("keydown", (e) => {
+
+        // Musik starten bei erstem Tastendruck
+        if (bgMusic.paused) {
+            bgMusic.play().catch(() => {});
+        }
+
+        const key = e.key.toLowerCase();
+        if((key == "a" || e.keyCode == 37) && snake.d != "RIGHT") snake.nextD = "LEFT";
+        if((key == "w" || e.keyCode == 38) && snake.d != "DOWN") snake.nextD = "UP";
+        if((key == "d" || e.keyCode == 39) && snake.d != "LEFT") snake.nextD = "RIGHT";
+        if((key == "s" || e.keyCode == 40) && snake.d != "UP") snake.nextD = "DOWN";
+
+        // CHEAT CODE: Taste N
+        if(key == "n") {
+            let cheatScore = prompt("Setze deinen Wunsch-Highscore:", savedHighScore);
+            if(cheatScore !== null && !isNaN(cheatScore)) {
+                localStorage.setItem("noahSnakeHS", cheatScore);
+                highScoreVal.innerText = cheatScore;
+                savedHighScore = cheatScore;
+            }
+        }
+    });
+
+    function update() {
+        if (gameOver || !snake.nextD) return;
+
+        snake.d = snake.nextD;
+        let headX = snake.body[0].x;
+        let headY = snake.body[0].y;
+
+        if(snake.d == "LEFT") headX -= box;
+        if(snake.d == "UP") headY -= box;
+        if(snake.d == "RIGHT") headX += box;
+        if(snake.d == "DOWN") headY += box;
+
+        let newHead = { x: headX, y: headY };
+
+        if(headX < 0 || headX >= canvas.width || headY < 0 || headY >= canvas.height || collision(newHead, snake.body)) {
+            playError();
+            bgMusic.pause();
+            bgMusic.currentTime = 0;
+            gameOver = true;
+            setTimeout(() => {
+                alert("GAME OVER!\nDein Score: " + score);
+                location.reload();
+            }, 150);
+            return;
+        }
+
+        if(headX == food.x && headY == food.y) {
+            playPlop();
+            score += (food.type === "gold") ? 5 : 1;
+            scoreVal.innerText = score;
+            if(score > savedHighScore) {
+                localStorage.setItem("noahSnakeHS", score);
+                highScoreVal.innerText = score;
+            }
+            food = createFood();
+        } else {
+            snake.body.pop();
+        }
+
+        snake.body.unshift(newHead);
+    }
+
+    function collision(head, array) {
+        for(let i = 0; i < array.length; i++) {
+            if(head.x == array[i].x && head.y == array[i].y) return true;
+        }
+        return false;
+    }
+
+    function draw() {
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = (food.type === "gold") ? "#f1c40f" : "#e74c3c";
+        ctx.beginPath();
+        ctx.arc(food.x + box/2, food.y + box/2, box/2 - 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        snake.body.forEach((part, i) => {
+            ctx.fillStyle = (i == 0) ? "#00ff7f" : "#008f5d";
+            ctx.fillRect(part.x, part.y, box - 2, box - 2);
+        });
+    }
+
+    function gameLoop(time) {
+        let speed = 300 - document.getElementById("speedRange").value;
+        if (time - snake.lastTime > speed) {
+            update();
+            snake.lastTime = time;
+        }
+        draw();
+        requestAnimationFrame(gameLoop);
+    }
+
+    requestAnimationFrame(gameLoop);
+</script>
+</body>
+</html>
